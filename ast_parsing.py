@@ -1,10 +1,11 @@
-from pycparser import c_parser, c_ast
+from pycparser import parse_file
 from pycparser.c_ast import *
 
 
 class AST_parsing:
 
     def __init__(self):
+        self.tmp_loop_content = None
         self.labeled_loops = []
         self.for_loops = []
 
@@ -14,14 +15,18 @@ class AST_parsing:
         :param file: path, path to the file with a source code
         :return: dict, dict with features, key is a loop, value is a dict of loop's characteristics
         """
-        with open(file, 'r') as myfile:
-            text = myfile.read()
-        parser = c_parser.CParser()
-        ast = parser.parse(text, filename='<none>')
+        # text = preprocess(file)
+
+        # parser = c_parser.CParser()
+        # ast = parser.parse_file(text, filename='<none>')
+        ast = parse_file(file, use_cpp=True, cpp_path='gcc',
+                         cpp_args=['-E', r'-ID:\prywatne\jul\pycparser\utils\fake_libc_include',
+                                   r'-ID:\Prywatne\jul\python_projekty\CRIntern\loop_generator\init_array_lib'])
         self.get_outer_loops(ast.ext)
         self.get_labeled_loops(self.for_loops)
         self.labeled_loops = delete_empty_statements(self.labeled_loops)
         features = process_loops(self.labeled_loops)
+        # print(features)
         return features
 
     def get_outer_loops(self, list_of_functions):
@@ -56,12 +61,13 @@ class AST_parsing:
         Find all labels for all given loop-nests and save them to the global variable labeled_loops
         :type list_of_outer_loops: [For1, For2,...]
         """
-        for element in list_of_outer_loops:
-            label = element[1]
-            loop = element[0]
-            if not label is None:  # If we have one-nested loop
-                self.labeled_loops.append((loop, label, 1))
-            else:
+        components = list_of_outer_loops[0][0].stmt.block_items
+        for index, element in enumerate(components):
+            if element.__class__ is Pragma:  # If we have one-nested loop
+                label = element.string
+                loop = components[index + 1]
+                # self.labeled_loops.append((loop, label, 1))
+                self.tmp_loop_content = (loop, label)
                 self.process_loop_nest(loop, 1)
 
     def process_loop_nest(self, loop_nest, level):
@@ -88,11 +94,24 @@ class AST_parsing:
         :return: bool, True if we have single Label or For, otherwise false
         """
         if element.__class__ is Label:
-            self.labeled_loops.append((element.stmt, element.name, level + 1))
+            # self.labeled_loops.append((element.stmt, element.name, level + 1))
+            self.tmp_loop_content = (element.stmt, element.name)
+            self.process_loop_nest(element, 0)
             return True
         elif element.__class__ is For:
             self.process_loop_nest(element, level + 1)
             return True
+        elif element.__class__ is Assignment:
+            # TODO tu zmiany bo dwa razy dodaje te samą pętlę
+            can_add = True
+            for loop in self.labeled_loops:
+                cnt_0, cnt_1, lvl = loop
+                if cnt_0 == self.tmp_loop_content[0]:
+                    can_add = False
+            if can_add:
+                self.labeled_loops.append((self.tmp_loop_content[0], self.tmp_loop_content[1], level))
+        # elif element.__class__ is If:
+
         return False
 
 
@@ -200,6 +219,23 @@ def process_statement(stmt, features, loop):
         features[loop]['vars'].add(stmt.name)
         process_rvalue(stmt.init, features, loop)
 
+    if stmt.__class__ is For:
+        # TODO maybe it should sth more?
+        # TODO nie widzi dobrze najwewnętrzniejszej pętli
+        features[loop]['statements'] -= 1
+        list_of_inner_statements = get_blocks_items_for(stmt)
+        for statement in list_of_inner_statements:
+            process_statement(statement, features, loop)
+
+    # if stmt.__class__ is DeclList:
+    #     for statement in stmt.decls:
+    #         process_statement(statement, features, loop)
+
+    if stmt.__class__ is Compound:
+        list_of_inner_statements = get_blocks_items_for(stmt)
+        for statement in list_of_inner_statements:
+            process_statement(statement, features, loop)
+
 
 def process_array_ref(current_array_ref, init_array_ref, features, loop, l_r_side, dimensionality=0):
     if current_array_ref.__class__ is ID:
@@ -282,5 +318,3 @@ def delete_empty_statements(list_of_loops):
     """
     output_list_of_loops = [x for x in list_of_loops if not x[0].__class__ is EmptyStatement]
     return output_list_of_loops
-
-
