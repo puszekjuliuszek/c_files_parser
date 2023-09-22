@@ -1,5 +1,5 @@
 from c_files_parser.ast_parsing import AST_parsing
-from auxiliary_functions import save_to_cvs
+# from auxiliary_functions import save_to_cvs
 from itertools import permutations
 DEPENDENCIES = list(permutations("ijk", 1)) + list(permutations("ijk", 2)) + list(permutations("ijk", 3))
 

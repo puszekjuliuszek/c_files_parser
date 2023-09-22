@@ -19,9 +19,10 @@ class AST_parsing:
 
         # parser = c_parser.CParser()
         # ast = parser.parse_file(text, filename='<none>')
-        ast = parse_file(file, use_cpp=True, cpp_path='gcc',
-                         cpp_args=['-E', r'-ID:\prywatne\jul\pycparser\utils\fake_libc_include',
-                                   r'-ID:\Prywatne\jul\python_projekty\CRIntern\loop_generator\init_array_lib'])
+        # ast = parse_file(file, use_cpp=True, cpp_path='gcc',
+        #                  cpp_args=['-E', r'-ID:\prywatne\jul\pycparser\utils\fake_libc_include',
+        #                            r'-ID:\Prywatne\jul\python_projekty\CRIntern\loop_generator\init_array_lib'])
+        ast = parse_file(file, use_cpp=True, cpp_path='cpp', cpp_args=[r'-I/home/juliusz/venv/lib/python3.9/site-packages/ice_locus-1.8.4-py3.9.egg/icelib/frontend/srccode/cparser/fake_libc_include',r'-I..more my    /loop_generator/src/libs'])
         self.get_outer_loops(ast.ext)
         self.get_labeled_loops(self.for_loops)
         self.labeled_loops = delete_empty_statements(self.labeled_loops)
