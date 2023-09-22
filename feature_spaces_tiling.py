@@ -1,6 +1,7 @@
 from c_files_parser.ast_parsing import AST_parsing
 from auxiliary_functions import save_to_cvs
-
+from itertools import permutations
+DEPENDENCIES = list(permutations("ijk", 1)) + list(permutations("ijk", 2)) + list(permutations("ijk", 3))
 
 def reconstruct_arrays(list_of_iterators):
     arrays_for_read = []

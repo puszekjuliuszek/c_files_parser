@@ -1,7 +1,7 @@
 import os
 from itertools import permutations
-from ast_parsing import AST_parsing
-from feature_spaces_tiling import extract_features_based_on_reconstructed_arrays
+from c_files_parser.ast_parsing import AST_parsing
+from c_files_parser.feature_spaces_tiling import extract_features_based_on_reconstructed_arrays
 
 DEPENDENCIES = list(permutations("ijk", 1)) + list(permutations("ijk", 2)) + list(permutations("ijk", 3))
 
@@ -84,8 +84,8 @@ def make_string_from_list(elem):
 
 
 def write_features():
-    files = [file for file in os.listdir('./loop_generator_2/src') if (file != 'libs' and "parsing" not in file)]
-    features = get_features('loop_generator_2/src/' + files[0])
+    files = [file for file in os.listdir('../loop_generator/src') if (file != 'libs' and "parsing" not in file)]
+    features = get_features('../loop_generator/src/' + files[0])
     print(features, "\n_____________________")
     features_len = [len(i) if not isinstance(i, int) else 1 for i in features]
     with open("./X_params.csv", "a") as file_to_write:
@@ -94,7 +94,7 @@ def write_features():
         file_to_write.write(to_print + "\n")
     for file in files[1:]:
         # os.system('gcc -E ../loop_generator/src/'+file)
-        features = get_features('loop_generator_2/src/' + file)
+        features = get_features('../loop_generator/src/' + file)
         print(features, "\n_____________________")
         with open("./X_params.csv", "a") as file_to_write:
             to_print = ",".join([make_string_from_list(elem) for elem in features])
